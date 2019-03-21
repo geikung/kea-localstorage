@@ -45,6 +45,7 @@ export default {
 
         const reducer = (state = value, payload) => {
           const result = defaultReducer(state, payload)
+          console.log(path, storageCache[path], result);
           if (storageCache[path] !== result) {
             storageCache[path] = result
             storage[path] = encryptor.encrypt(JSON.stringify(result))
