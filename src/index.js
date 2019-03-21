@@ -54,9 +54,9 @@ export default {
             storageCache[path] = result
 
             if (isDevelopment) {
-              storage[path] = encryptor.encrypt(JSON.stringify(result))
-            } else {
               storage[path] = JSON.stringify(result)
+            } else {
+              storage[path] = encryptor.encrypt(JSON.stringify(result))
             }
           }
           return result
