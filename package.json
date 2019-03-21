@@ -1,5 +1,5 @@
 {
-  "name": "kea-localstorage",
+  "name": "kea-localstorage-encrypt",
   "version": "0.2.0",
   "description": "Store reducer state in localStorage with Kea",
   "author": "Marius Andra",
