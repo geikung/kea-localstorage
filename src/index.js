@@ -1,10 +1,11 @@
 // Specify a string key:
 // Don't do this though, your keys should most likely be stored in env variables
 // and accessed via process.env.MY_SECRET_KEY
-const key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ';
+const key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ'
 
 // Create an encryptor:
-const encryptor = require('simple-encryptor')(key);
+const encryptor = require('simple-encryptor')(key)
+const isDevelopment = process.env.NODE_ENV === 'development'
 
 let storageCache = {}
 
@@ -39,18 +40,26 @@ export default {
         const defaultValue = reducerObjects[key].value
         const defaultReducer = reducerObjects[key].reducer
 
-        const value = storage[path] ? JSON.parse(encryptor.decrypt(storage[path])) : defaultValue
+        let value;
+        if (isDevelopment) {
+          value = storage[path] ? JSON.parse(storage[path]) : defaultValue
+        } else {
+          value = storage[path] ? JSON.parse(encryptor.decrypt(storage[path])) : defaultValue
+        }
         storageCache[path] = value
-        console.log('value:', value)
 
         const reducer = (state = value, payload) => {
           const result = defaultReducer(state, payload)
           console.log(path, storageCache[path], result);
           if (storageCache[path] !== result) {
             storageCache[path] = result
-            storage[path] = encryptor.encrypt(JSON.stringify(result))
+
+            if (isDevelopment) {
+              storage[path] = encryptor.encrypt(JSON.stringify(result))
+            } else {
+              storage[path] = JSON.stringify(result)
+            }
           }
-          console.log('result:', result)
           return result
         }
 
