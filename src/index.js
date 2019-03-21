@@ -40,7 +40,7 @@ export default {
         const defaultValue = reducerObjects[key].value
         const defaultReducer = reducerObjects[key].reducer
 
-        let value;
+        let value = ''
         if (isDevelopment) {
           value = storage[path] ? JSON.parse(storage[path]) : defaultValue
         } else {
@@ -50,7 +50,6 @@ export default {
 
         const reducer = (state = value, payload) => {
           const result = defaultReducer(state, payload)
-          console.log(path, storageCache[path], result);
           if (storageCache[path] !== result) {
             storageCache[path] = result
 

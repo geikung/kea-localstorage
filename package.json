@@ -2,7 +2,7 @@
   "name": "kea-localstorage-encrypt",
   "version": "0.2.0",
   "description": "Store reducer state in localStorage with Kea",
-  "author": "Marius Andra",
+  "author": "Gei Heisakun",
   "license": "MIT",
   "main": "lib/index.js",
   "module": "es/index.js",
