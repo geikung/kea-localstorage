@@ -33,6 +33,7 @@ export default {
 
         const value = storage[path] ? JSON.parse(storage[path]) : defaultValue
         storageCache[path] = value
+        console.log('value:', value)
 
         const reducer = (state = value, payload) => {
           const result = defaultReducer(state, payload)
@@ -40,6 +41,7 @@ export default {
             storageCache[path] = result
             storage[path] = JSON.stringify(result)
           }
+          console.log('result:', result)
           return result
         }
 
