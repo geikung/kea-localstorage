@@ -1,7 +1,7 @@
 // Specify a string key:
 // Don't do this though, your keys should most likely be stored in env variables
 // and accessed via process.env.MY_SECRET_KEY
-const key = process.env.APP_KEY || 'secret';
+const key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ';
 
 // Create an encryptor:
 const encryptor = require('simple-encryptor')(key);
