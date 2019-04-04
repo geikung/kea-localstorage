@@ -41,10 +41,14 @@ export default {
         const defaultReducer = reducerObjects[key].reducer
 
         let value = ''
-        if (isDevelopment) {
-          value = storage[path] ? JSON.parse(storage[path]) : defaultValue
-        } else {
-          value = storage[path] ? JSON.parse(encryptor.decrypt(storage[path])) : defaultValue
+        try {
+          if (isDevelopment) {
+            value = storage[path] ? JSON.parse(storage[path]) : defaultValue
+          } else {
+            value = storage[path] ? JSON.parse(encryptor.decrypt(storage[path])) : defaultValue
+          }
+        } catch(error) {
+          value = '';
         }
         storageCache[path] = value
 
