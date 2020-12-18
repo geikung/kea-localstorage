@@ -1,78 +1,109 @@
-// Specify a string key:
-// Don't do this though, your keys should most likely be stored in env variables
-// and accessed via process.env.MY_SECRET_KEY
+import { getPluginContext, setPluginContext } from 'kea'
+
 const key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ'
 
 // Create an encryptor:
 const encryptor = require('simple-encryptor')(key)
-const isDevelopment = process.env.NODE_ENV === 'development'
+const isDevelopment = false // process.env.NODE_ENV === 'development'
 
-let storageCache = {}
-
-let hasLocalStorage = false
-let storage = {}
+let localStorageEngine
 
 try {
-  storage = window.localStorage
+  localStorageEngine = window.localStorage
 
   const x = '__storage_test__'
-  storage.setItem(x, x)
-  storage.removeItem(x)
-
-  hasLocalStorage = true
+  localStorageEngine.setItem(x, x)
+  localStorageEngine.removeItem(x)
 } catch (e) {
-  // not available
+  localStorageEngine = undefined
 }
 
-export default {
+const localStoragePlugin = ({ prefix = '', separator = '.', storageEngine = localStorageEngine } = {}) => ({
   name: 'localStorage',
 
-  // can be used globally and locally
-  global: true,
-  local: true,
+  events: {
+    afterPlugin () {
+      setPluginContext('localStorage', { storageCache: {}, storageEngine })
+    },
 
-  // reducerObjects is an object with the following structure:
-  // { key: { reducer, value, type, options } }
-  mutateReducerObjects (input, output, reducerObjects) {
-    if (hasLocalStorage && input.path) {
-      Object.keys(reducerObjects).filter(key => reducerObjects[key].options && reducerObjects[key].options.persist).forEach(key => {
-        const path = `${output.path.join('.')}.${key}`
-        const defaultValue = reducerObjects[key].value
-        const defaultReducer = reducerObjects[key].reducer
+    beforeCloseContext (context) {
+      setPluginContext('localStorage', { storageCache: {}, storageEngine })
+    }
+  },
 
-        let value = ''
-        try {
-          if (isDevelopment) {
-            value = storage[path] ? JSON.parse(storage[path]) : defaultValue
-          } else {
-            value = storage[path] ? JSON.parse(encryptor.decrypt(storage[path])) : defaultValue
+  buildOrder: {
+    localStorage: { after: 'reducers' }
+  },
+
+  buildSteps: {
+    localStorage (logic, input) {
+      if (!storageEngine) {
+        return
+      }
+
+      const keysToPersist = Object.keys(logic.reducerOptions).filter(key => {
+        return logic.reducerOptions[key].persist && !(logic.cache.localStorage && logic.cache.localStorage[key])
+      })
+
+      if (Object.keys(keysToPersist).length === 0) {
+        return
+      }
+
+      if (!logic.cache.localStorage) {
+        logic.cache.localStorage = {}
+      }
+
+      if (!logic.cache.localStorageDefaults) {
+        logic.cache.localStorageDefaults = {}
+      }
+
+      if (!input.path && logic.pathString.indexOf('kea.inline.') === 0) {
+        console.error('Logic store must have a path specified in order to persist reducer values')
+        return
+      }
+
+      const { storageCache } = getPluginContext('localStorage')
+
+      keysToPersist.forEach(key => {
+        const _prefix = logic.reducerOptions[key].prefix || prefix
+        const _separator = logic.reducerOptions[key].separator || separator
+
+        const path = `${_prefix ? _prefix + _separator : ''}${logic.path.join(_separator)}${_separator}${key}`
+        const defaultReducer = logic.reducers[key]
+
+        logic.cache.localStorageDefaults[key] = logic.defaults[key]
+
+        if (typeof storageEngine[path] !== 'undefined') {
+          try {
+            if (isDevelopment) {
+              logic.defaults[key] = JSON.parse(storageEngine[path])
+            } else {
+              logic.defaults[key] = JSON.parse(encryptor.decrypt(storageEngine[path]))
+            }
+          } catch (error) {
+            logic.defaults[key] = JSON.parse(storageEngine[path])
           }
-        } catch(error) {
-          value = '';
         }
-        storageCache[path] = value
 
-        const reducer = (state = value, payload) => {
+        storageCache[path] = logic.defaults[key]
+
+        logic.reducers[key] = (state = logic.defaults[key], payload) => {
           const result = defaultReducer(state, payload)
           if (storageCache[path] !== result) {
             storageCache[path] = result
 
             if (isDevelopment) {
-              storage[path] = JSON.stringify(result)
+              storageEngine[path] = JSON.stringify(result)
             } else {
-              storage[path] = encryptor.encrypt(JSON.stringify(result))
+              storageEngine[path] = encryptor.encrypt(JSON.stringify(result))
             }
           }
           return result
         }
-
-        reducerObjects[key].reducer = reducer
-        reducerObjects[key].value = value
+        logic.cache.localStorage[key] = true
       })
     }
-  },
-
-  clearCache () {
-    storageCache = {}
   }
-}
+})
+
+export default localStoragePlugin
