@@ -1,5 +1,11 @@
 import { getPluginContext, setPluginContext } from 'kea';
 
+var key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ';
+
+// Create an encryptor:
+var encryptor = require('simple-encryptor')(key);
+var isDevelopment = false; // process.env.NODE_ENV === 'development'
+
 var localStorageEngine = void 0;
 
 try {
@@ -77,7 +83,15 @@ var localStoragePlugin = function localStoragePlugin() {
           logic.cache.localStorageDefaults[key] = logic.defaults[key];
 
           if (typeof storageEngine[path] !== 'undefined') {
-            logic.defaults[key] = JSON.parse(storageEngine[path]);
+            try {
+              if (isDevelopment) {
+                logic.defaults[key] = JSON.parse(storageEngine[path]);
+              } else {
+                logic.defaults[key] = JSON.parse(encryptor.decrypt(storageEngine[path]));
+              }
+            } catch (error) {
+              logic.defaults[key] = JSON.parse(storageEngine[path]);
+            }
           }
 
           storageCache[path] = logic.defaults[key];
@@ -89,7 +103,12 @@ var localStoragePlugin = function localStoragePlugin() {
             var result = defaultReducer(state, payload);
             if (storageCache[path] !== result) {
               storageCache[path] = result;
-              storageEngine[path] = JSON.stringify(result);
+
+              if (isDevelopment) {
+                storageEngine[path] = JSON.stringify(result);
+              } else {
+                storageEngine[path] = encryptor.encrypt(JSON.stringify(result));
+              }
             }
             return result;
           };
