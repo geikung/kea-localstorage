@@ -4,7 +4,7 @@ var key = process.env.APP_KEY || 'nzyH8FSHJjdUhMEwDS46nNwTFFyTfDVZ';
 
 // Create an encryptor:
 var encryptor = require('simple-encryptor')(key);
-var isDevelopment = false; // process.env.NODE_ENV === 'development'
+var isDevelopment = process.env.NODE_ENV === 'development';
 
 var localStorageEngine = void 0;
 
